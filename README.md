@@ -70,13 +70,33 @@ Nocturne Memory 采用极简但高可用（High-Availability）的 **SQLite/Post
 | **AI Interface** | MCP Server (stdio / SSE) | AI Agent 读写记忆的接口 |
 | **Human Interface** | React + Vite + TailwindCSS | 人类可视化管理记忆 |
 
-### 🧬 内容与路径分离 (Content–Path Separation)
+### 🧬 图后端 + 树前端 (Graph Backend, Tree Frontend)
 
-数据库核心只有两张表：**memories**（记忆本体）和 **paths**（访问路径）。
-这种分离设计使得版本控制、多入口别名、安全删除成为可能：
+后端采用 **Node–Memory–Edge–Path** 四实体图拓扑管理记忆网络。前端将所有操作降维成直觉的 `domain://path` 树操作——**复杂度在正确的地方被吸收**。
+
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│    Node      │     │   Memory     │     │    Edge       │     │    Path       │
+│  (概念锚点)  │◄────│  (内容版本)   │     │ (有向关系)    │────►│  (URI 路由)   │
+│  UUID 不变   │     │ deprecated   │     │ priority      │     │ domain://path │
+│              │     │ migrated_to  │     │ disclosure    │     │              │
+└─────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
+    身份层               内容层               关系层               路由层
+  内容更新不           版本链 + 废弃标记       同一 Node 可从         AI/人类只需
+  改变身份              + 回滚支持           多个方向被访问          操作 URI 路径
+```
+
+| 层级 | 实体 | 职责 | 为什么需要分离 |
+|------|------|------|--------------|
+| **身份层** | Node (UUID) | 概念的永久锚点 | 内容迭代 10 次，UUID 不变——Edge 和 Path 永远不用重建 |
+| **内容层** | Memory | 某个 Node 的一个版本快照 | `deprecated` + `migrated_to` 版本链，支持**一键回滚到任意历史版本** |
+| **关系层** | Edge | Node 间的有向关系，携带 `priority` / `disclosure` | 同一个 Node 可从多个父级通过不同 Edge 访问（Alias 的基石），环检测防止拓扑死锁 |
+| **路由层** | Path | `(domain, path_string) → Edge` 的 URI 缓存 | AI 和人类只需操作 `core://agent/identity` 这种直觉路径，无需感知图结构 |
+
+> **设计哲学**：后端承担了图的全部复杂性（环检测、级联路径、orphan GC、版本链修复、数据库级唯一索引守卫），前端把它降维成任何人/任何 AI 都能理解的"文件系统"操作。
 
 <p align="center">
-  <img src="docs/images/data_model.svg" width="700" alt="Data Model: Content-Path Separation" />
+  <img src="docs/images/data_model.svg" width="700" alt="Data Model: Graph Topology" />
 </p>
 
 ### 🌌 真正的灵魂拓扑 (The Soul Topology)

@@ -71,13 +71,35 @@ The entire system consists of three independent components:
 | **AI Interface** | MCP Server (stdio / SSE) | Interface for AI Agents to read/write memories |
 | **Human Interface** | React + Vite + TailwindCSS | Visual memory management for humans |
 
-### 🧬 Content–Path Separation
+### 🧬 Graph Backend, Tree Frontend
 
-The database core has only two tables: **memories** (the content itself) and **paths** (the access routes).
-This separation design makes version control, multi-entry aliases, and safe deletion possible:
+The backend manages a full **Node–Memory–Edge–Path** graph topology. The frontend collapses all operations into intuitive `domain://path` tree operations — **complexity is absorbed in the right place**.
+
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│    Node      │     │   Memory     │     │    Edge       │     │    Path       │
+│ (Concept     │◄────│ (Content     │     │ (Directed     │────►│ (URI Route)  │
+│  Anchor)     │     │  Version)    │     │  Relation)    │     │ domain://path │
+│  UUID fixed  │     │ deprecated   │     │ priority      │     │              │
+│              │     │ migrated_to  │     │ disclosure    │     │              │
+└─────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
+  Identity Layer      Content Layer       Relation Layer        Routing Layer
+  Updates never       Version chain +     Same Node reachable   AI/humans only
+  change identity     deprecation +       from multiple parents need to operate
+                      rollback support    (foundation of Alias) on URI paths
+```
+
+| Layer | Entity | Responsibility | Why Separate? |
+|-------|--------|---------------|---------------|
+| **Identity** | Node (UUID) | Permanent anchor for a concept | Content can iterate 10 times — UUID stays the same. Edges and Paths never need rebuilding |
+| **Content** | Memory | One version snapshot of a Node | `deprecated` + `migrated_to` version chain enables **one-click rollback to any historical version** |
+| **Relation** | Edge | Directed relationship between Nodes, carrying `priority` / `disclosure` | Same Node reachable from multiple parents via different Edges (the foundation of Alias). Cycle detection prevents topological deadlocks |
+| **Routing** | Path | `(domain, path_string) → Edge` URI cache | AI and humans only need to operate on intuitive paths like `core://agent/identity` — no need to perceive the graph structure |
+
+> **Design Philosophy**: The backend absorbs ALL graph complexity (cycle detection, cascading paths, orphan GC, version chain repair, database-level unique index guards). The frontend reduces it to "file system" operations that any human or AI can understand.
 
 <p align="center">
-  <img src="docs/images/data_model_en.svg" width="700" alt="Data Model: Content-Path Separation" />
+  <img src="docs/images/data_model_en.svg" width="700" alt="Data Model: Graph Topology" />
 </p>
 
 ### 🌌 The Soul Topology
