@@ -420,6 +420,17 @@ docker compose down -v
 | SSE 连接超时 | 检查 Nginx 代理配置，确认 `backend-sse` 服务运行正常 |
 | 端口被占用 | 修改 `.env` 中的 `NGINX_PORT` 为其他可用端口 |
 
+### 数据持久化
+
+Docker 部署使用 PostgreSQL 作为数据库后端，数据存储在 Docker Volume `postgres_data` 中。快照（Snapshot）数据存储在容器内 `/app/snapshots` 目录。
+
+如需持久化快照数据，可以在 `docker-compose.yml` 中为 `backend-api` 和 `backend-sse` 添加 volume 挂载：
+
+```yaml
+volumes:
+  - ./snapshots:/app/snapshots
+```
+
 </details>
 
 ---

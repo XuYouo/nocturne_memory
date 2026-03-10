@@ -16,7 +16,7 @@ from typing import Optional, Dict, Any, List
 from pathlib import Path
 
 
-DEFAULT_SNAPSHOT_DIR = os.path.join(
+DEFAULT_SNAPSHOT_DIR = os.environ.get("SNAPSHOT_DIR") or os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "snapshots",
 )

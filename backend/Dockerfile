@@ -20,4 +20,8 @@ COPY . .
 # 创建非 root 用户以提升安全性
 RUN adduser --disabled-password --gecos '' appuser
 
+# 创建运行时所需的可写目录（快照存储 & 迁移备份）
+RUN mkdir -p /app/snapshots /app/backups \
+    && chown appuser:appuser /app/snapshots /app/backups
+
 USER appuser
