@@ -1,10 +1,11 @@
 FROM python:3.12-slim
 
-# 安装系统依赖（libpq-dev 供 asyncpg/psycopg2 编译，gcc 供 C 扩展）
+# 安装系统依赖（libpq-dev 供 asyncpg/psycopg2 编译，gcc 供 C 扩展，postgresql-client 供 pg_dump 备份）
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         curl \
         libpq-dev \
+        postgresql-client \
         gcc \
     && rm -rf /var/lib/apt/lists/*
 
@@ -18,7 +19,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # 创建非 root 用户以提升安全性
-RUN adduser --disabled-password --gecos '' appuser
+RUN adduser --disabled-password --gecos '' appuser \
+    && chown -R appuser:appuser /app
 
 # 创建运行时所需的可写目录（快照存储 & 迁移备份）
 RUN mkdir -p /app/snapshots /app/backups \
